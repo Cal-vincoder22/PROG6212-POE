@@ -51,7 +51,8 @@ GitHub Actions validates that the `/docs` folder exists and contains the require
 
 **Screenshot of successful green build:**
 
-[INSERT CI/CD SCREENSHOT HERE]
+[<img width="1485" height="235" alt="green" src="https://github.com/user-attachments/assets/7ef93f9d-09e7-4e43-bd10-507a1929b931" />
+]
 
 ## Video presentation
 
