@@ -1,4 +1,4 @@
-# RaceDay
+# RaceDay Part 1 & 2
 
 PROG6212 Programming 2B - Portfolio of Evidence - Part 1: System Planning and Database
 
@@ -65,3 +65,76 @@ endpoint plan choices, and running the SQL script live in SSMS:
 
 CLAUDE CODE (e.g. planning, proofreading, ERD/endpoint
      plan drafting)
+
+---
+
+# Part 2: RESTful API (RaceDay.Api)
+
+ASP.NET Core 8 Web API using Entity Framework Core (Code-First) with SQL Server, session-based authentication, role-based authorisation (Organiser / Participant), Swagger documentation and xUnit tests.
+
+## How to run
+
+1. Install the .NET 8 SDK and SQL Server LocalDB (included with Visual Studio).
+2. Clone the repo and open `RaceDay/RaceDay.slnx` in Visual Studio.
+3. Check the connection string in `RaceDay/RaceDay.Api/appsettings.json`:
+   `Server=(localdb)\MSSQLLocalDB;Database=RaceDayDB;Trusted_Connection=True;TrustServerCertificate=True;`
+4. Open **Tools → NuGet Package Manager → Package Manager Console**, set the default project to `RaceDay.Api`, and run `Update-Database`. This creates `RaceDayDB` from the `InitialCreate` migration and seeds the two roles.
+5. Press **F5**. Swagger opens at `https://localhost:7003/swagger`.
+
+## Authentication and roles
+
+- `POST /api/auth/register` creates a user as an `Organiser` or `Participant`. Passwords are hashed with BCrypt.
+- `POST /api/auth/login` starts a server-side session storing the user ID and role. The session cookie is sent automatically by the browser (and by Swagger UI).
+- Endpoints are protected by a custom `SessionAuthorize` filter: **401** if not logged in, **403** if the role is wrong.
+- Organisers can only change their own events (ownership is checked, returning **403** otherwise).
+
+## Endpoints
+
+| Area | Method and route | Who | Success | Errors |
+|---|---|---|---|---|
+| Auth | `POST /api/auth/register` | Anyone | 201 | 400, 409 |
+| Auth | `POST /api/auth/login` | Anyone | 200 | 401 |
+| Auth | `POST /api/auth/logout` | Logged in | 200 | 401 |
+| Profile | `GET /api/users/me` | Logged in | 200 | 401, 404 |
+| Profile | `PUT /api/users/me` | Logged in | 200 | 400, 401, 404 |
+| Events | `GET /api/events` (filters: `eventType`, `upcomingOnly`) | Anyone | 200 | |
+| Events | `GET /api/events/{id}` | Anyone | 200 | 404 |
+| Events | `POST /api/events` | Organiser | 201 | 400, 401, 403 |
+| Events | `PUT /api/events/{id}` | Owning Organiser | 200 | 400, 401, 403, 404 |
+| Events | `DELETE /api/events/{id}` | Owning Organiser | 204 | 401, 403, 404, 409 |
+| Categories | `GET /api/events/{eventId}/categories` | Anyone | 200 | 404 |
+| Categories | `POST /api/events/{eventId}/categories` | Owning Organiser | 201 | 400, 401, 403, 404 |
+| Categories | `PUT /api/categories/{id}` | Owning Organiser | 200 | 400, 401, 403, 404 |
+| Categories | `DELETE /api/categories/{id}` | Owning Organiser | 204 | 401, 403, 404, 409 |
+| Enrolments | `POST /api/enrolments` | Participant | 201 | 400, 401, 403, 404, 409 |
+| Enrolments | `GET /api/enrolments/mine` | Participant | 200 | 401, 403 |
+| Enrolments | `GET /api/events/{eventId}/enrolments` | Owning Organiser | 200 | 401, 403, 404 |
+| Results | `POST /api/enrolments/{enrolmentId}/result` | Owning Organiser | 201 | 400, 401, 403, 404, 409 |
+| Results | `PUT /api/results/{id}` | Owning Organiser | 200 | 400, 401, 403, 404 |
+| Results | `GET /api/results/mine` | Participant | 200 | 401, 403 |
+
+## Business rules
+
+- An email address can only be registered once (409).
+- A Participant cannot enrol twice in the same category (409) or in an event that has already taken place (400).
+- An event with enrolments cannot be deleted (409).
+- A result can only be captured once per enrolment (409), never for a cancelled enrolment (400), and finish time must be greater than zero (400).
+
+## Running the unit tests
+
+1. In Visual Studio open **Test → Test Explorer** and click **Run All Tests**, or run `dotnet test RaceDay/RaceDay.Tests/RaceDay.Tests.csproj`.
+2. The suite has **45 tests** using the EF Core in-memory provider and a fake session. They cover success and failure paths for Auth, Events, Enrolments, Results, Profile and the role-rejection filter (401 and 403).
+
+## CI/CD
+
+`.github/workflows/part2-build-test.yml` runs on every push and pull request to `main`. It restores, builds and runs all unit tests on Ubuntu with .NET 8. The Part 1 workflow still validates the `/docs` folder.
+
+## Changes from the Part 1 plan
+
+- `User` has an extra optional `ProfilePictureUrl` column, used by the profile endpoints.
+- `Enrolment` stores `EventId` directly (as well as `CategoryId`) and a `Status` (Confirmed by default), which simplifies organiser queries and duplicate checks.
+- Registration takes the role as text (`"Organiser"` or `"Participant"`) rather than a numeric ID.
+  
+## Video walkthrough
+
+[https://youtu.be/ROM6_qx7lW0]
