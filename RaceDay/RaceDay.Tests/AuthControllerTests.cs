@@ -120,5 +120,22 @@ namespace RaceDay.Tests
 
             Assert.IsType<UnauthorizedObjectResult>(result);
         }
+
+        [Fact]
+        public async Task Logout_ClearsSessionAndReturnsOk()
+        {
+            using var db = TestHelper.CreateDb();
+            EnsureRoles(db);
+            var ctrl = CreateController(db);
+            await ctrl.Register(ValidRegister("out@test.com"));
+            await ctrl.Login(new LoginDto { Email = "out@test.com", Password = "Password123!" });
+            Assert.NotNull(ctrl.HttpContext.Session.GetInt32("UserId"));
+
+            var result = ctrl.Logout();
+
+            Assert.IsType<OkObjectResult>(result);
+            Assert.Null(ctrl.HttpContext.Session.GetInt32("UserId"));
+            Assert.Null(ctrl.HttpContext.Session.GetString("Role"));
+        }
     }
 }
