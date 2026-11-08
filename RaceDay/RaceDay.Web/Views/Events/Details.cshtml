@@ -1,0 +1,88 @@
+﻿@model RaceDay.Web.Models.EventDetailModel
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = Model.Name;
+    var role = Context.Session.GetString("Role");
+    var past = Model.EventDate < DateTime.Now;
+
+    string AgeText(RaceDay.Web.Models.CategoryItem c) =>
+        c.MinAge == null && c.MaxAge == null ? "All ages"
+        : c.MaxAge == null ? $"{c.MinAge}+"
+        : c.MinAge == null ? $"Up to {c.MaxAge}"
+        : $"{c.MinAge} to {c.MaxAge}";
+}
+
+<a href="/" class="text-decoration-none">&larr; All events</a>
+
+<div class="rd-panel mt-3 p-0 overflow-hidden">
+    @if (!string.IsNullOrEmpty(Model.BannerImageUrl))
+    {
+        <img src="@Model.BannerImageUrl" alt="@Model.Name banner" class="w-100" style="max-height:360px;object-fit:cover;" />
+    }
+    else
+    {
+        <div class="rd-card-placeholder" style="height:200px;">RACEDAY</div>
+    }
+    <div class="p-4">
+        <span class="badge type-badge type-@Model.EventType.ToLower()">@Model.EventType</span>
+        <span class="text-muted ms-1">@Model.DistanceKm.ToString("0.#") km</span>
+        <h2 class="mt-2">@Model.Name</h2>
+        <p class="text-muted mb-1">@Model.EventDate.ToString("dddd, d MMMM yyyy") &middot; @Model.Location</p>
+        <p class="text-muted">Organised by @Model.OrganiserName</p>
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p>@Model.Description</p>
+        }
+    </div>
+</div>
+
+<h4 class="mt-4 mb-3">Choose your category</h4>
+
+@if (!Model.Categories.Any())
+{
+    <div class="rd-panel text-muted">The organiser hasn't added categories yet. Check back soon.</div>
+}
+else
+{
+    <div class="rd-panel">
+        <div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead>
+                    <tr><th>Category</th><th>Age group</th><th>Distance</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Categories)
+                    {
+                        <tr>
+                            <td>@c.CategoryName</td>
+                            <td>@AgeText(c)</td>
+                            <td>@(c.DistanceKm.HasValue ? c.DistanceKm.Value.ToString("0.#") + " km" : "-")</td>
+                            <td class="text-end">
+                                @if (role == "Participant" && !past)
+                                {
+                                    <form asp-controller="Events" asp-action="Enrol" method="post" class="d-inline">
+                                        <input type="hidden" name="eventId" value="@Model.EventId" />
+                                        <input type="hidden" name="categoryId" value="@c.CategoryId" />
+                                        <button type="submit" class="btn btn-rd btn-sm">Enter</button>
+                                    </form>
+                                }
+                                else if (past)
+                                {
+                                    <span class="text-muted small">Event closed</span>
+                                }
+                                else if (role == null)
+                                {
+                                    <a class="btn btn-outline-rd btn-sm" href="/Account/Login?returnUrl=/Events/Details/@Model.EventId">Log in to enter</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Participants only</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
