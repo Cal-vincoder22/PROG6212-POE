@@ -56,6 +56,35 @@ public class EventsController : ControllerBase
         return Ok(events);
     }
 
+    /// <summary>Lists the logged-in Organiser's own events with enrolment counts, for the dashboard.</summary>
+    /// <response code="200">List returned.</response>
+    /// <response code="401">Not logged in.</response>
+    /// <response code="403">Not an Organiser.</response>
+    [HttpGet("mine")]
+    [SessionAuthorize("Organiser")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyEvents()
+    {
+        var events = await _db.Events
+            .Where(e => e.OrganiserId == CurrentUserId)
+            .OrderBy(e => e.EventDate)
+            .Select(e => new
+            {
+                e.EventId,
+                e.Name,
+                e.EventDate,
+                e.Location,
+                e.EventType,
+                e.BannerImageUrl,
+                EnrolmentCount = e.Enrolments.Count
+            })
+            .ToListAsync();
+
+        return Ok(events);
+    }
+
     /// <summary>
     /// Returns full detail for a single event, including its categories.
     /// </summary>
