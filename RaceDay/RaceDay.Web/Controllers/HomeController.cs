@@ -1,32 +1,33 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using RaceDay.Web.Models;
+using RaceDay.Web.Services;
 
 namespace RaceDay.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly ApiClient _api;
 
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
+        public HomeController(ApiClient api) => _api = api;
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(string? eventType, bool upcomingOnly = true)
         {
-            return View();
-        }
+            var url = $"api/events?upcomingOnly={upcomingOnly.ToString().ToLower()}";
+            if (!string.IsNullOrWhiteSpace(eventType))
+                url += $"&eventType={Uri.EscapeDataString(eventType)}";
 
-        public IActionResult Privacy()
-        {
-            return View();
+            var vm = new HomeViewModel { EventType = eventType, UpcomingOnly = upcomingOnly };
+            var res = await _api.GetAsync(url);
+
+            if (res.IsSuccess) vm.Events = res.As<List<EventListItem>>() ?? new();
+            else vm.Error = "We couldn't load events right now. Please try again shortly.";
+
+            return View(vm);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+        public IActionResult Error() =>
+            View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }

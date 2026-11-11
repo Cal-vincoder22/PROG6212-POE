@@ -1,8 +1,71 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model RaceDay.Web.Models.HomeViewModel
+@{
+    ViewData["Title"] = "Events";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="rd-hero">
+    <h1>Find your next race</h1>
+    <p>Road runs, walks and cycle tours across South Africa. Pick an event, choose a category and get race-ready.</p>
+</section>
+
+<form method="get" class="rd-panel mb-4 row g-3 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Event type</label>
+        <select name="eventType" class="form-select">
+            <option value="">All types</option>
+            @foreach (var t in new[] { "Run", "Walk", "Cycle" })
+            {
+                <option value="@t" selected="@(Model.EventType == t)">@t</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <div class="form-check">
+            <input type="checkbox" asp-for="UpcomingOnly" class="form-check-input" />
+            <label asp-for="UpcomingOnly" class="form-check-label">Upcoming events only</label>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button type="submit" class="btn btn-rd">Filter</button>
+        <a href="/" class="btn btn-outline-secondary">Reset</a>
+    </div>
+</form>
+
+@if (Model.Error != null)
+{
+    <div class="alert alert-warning">@Model.Error</div>
+}
+else if (!Model.Events.Any())
+{
+    <div class="rd-panel text-center text-muted">No events match your filters yet. Check back soon.</div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var e in Model.Events)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card rd-card h-100">
+                    @if (!string.IsNullOrEmpty(e.BannerImageUrl))
+                    {
+                        <img class="rd-card-img" src="@e.BannerImageUrl" alt="@e.Name banner" />
+                    }
+                    else
+                    {
+                        <div class="rd-card-placeholder">RACEDAY</div>
+                    }
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-2">
+                            <span class="badge type-badge type-@e.EventType.ToLower()">@e.EventType</span>
+                            <span class="text-muted small ms-1">@e.DistanceKm.ToString("0.#") km</span>
+                        </div>
+                        <h5 class="card-title">@e.Name</h5>
+                        <p class="text-muted small mb-1">@e.EventDate.ToString("dddd, d MMMM yyyy")</p>
+                        <p class="text-muted small mb-3">@e.Location</p>
+                        <a href="/Events/Details/@e.EventId" class="btn btn-outline-rd mt-auto">View details</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

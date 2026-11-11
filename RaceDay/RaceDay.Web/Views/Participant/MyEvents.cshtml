@@ -1,0 +1,37 @@
+﻿@model List<RaceDay.Web.Models.EnrolmentItem>
+@{
+    ViewData["Title"] = "My events";
+}
+
+<h2 class="mb-3">My events</h2>
+
+@if (!Model.Any())
+{
+    <div class="rd-panel text-center text-muted">
+        You haven't entered any events yet. <a href="/">Browse events</a>
+    </div>
+}
+else
+{
+    <div class="rd-panel">
+        <div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead>
+                    <tr><th>Event</th><th>Category</th><th>Event date</th><th>Entered on</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model)
+                    {
+                        <tr>
+                            <td><a href="/Events/Details/@e.EventId">@e.EventName</a></td>
+                            <td>@e.CategoryName</td>
+                            <td>@e.EventDate.ToString("d MMM yyyy")</td>
+                            <td>@e.EnrolmentDate.ToLocalTime().ToString("d MMM yyyy")</td>
+                            <td><span class="status-badge status-@e.Status.ToLower()">@e.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
