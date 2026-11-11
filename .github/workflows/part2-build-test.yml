@@ -27,3 +27,9 @@ jobs:
 
       - name: Run unit tests
         run: dotnet test RaceDay/RaceDay.Tests/RaceDay.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Build MVC web project
+        run: dotnet build RaceDay/RaceDay.Web/RaceDay.Web.csproj --configuration Release
+
+      - name: Build Docker image
+        run: docker build -t raceday-web RaceDay/RaceDay.Web
