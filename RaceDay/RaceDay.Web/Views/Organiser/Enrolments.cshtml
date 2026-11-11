@@ -1,0 +1,42 @@
+﻿@model List<RaceDay.Web.Models.EventEnrolmentItem>
+@{
+    ViewData["Title"] = "Entries"; int eventId = ViewBag.EventId;
+}
+
+<a asp-action="Index" class="text-decoration-none">&larr; My events</a>
+<h2 class="mt-2 mb-3">Entries: @ViewBag.EventName</h2>
+
+@if (!Model.Any())
+{
+    <div class="rd-panel text-center text-muted">No one has entered this event yet.</div>
+}
+else
+{
+    <div class="rd-panel">
+        <div class="table-responsive">
+            <table class="table rd-table align-middle mb-0">
+                <thead><tr><th>Participant</th><th>Category</th><th>Entered</th><th>Status</th><th>Capture result</th></tr></thead>
+                <tbody>
+                    @foreach (var x in Model)
+                    {
+                        <tr>
+                            <td>@x.ParticipantName</td>
+                            <td>@x.CategoryName</td>
+                            <td>@x.EnrolmentDate.ToLocalTime().ToString("d MMM yyyy")</td>
+                            <td><span class="status-badge status-@x.Status.ToLower()">@x.Status</span></td>
+                            <td>
+                                <form asp-action="CaptureResult" method="post" class="d-flex gap-1">
+                                    <input type="hidden" name="eventId" value="@eventId" />
+                                    <input type="hidden" name="enrolmentId" value="@x.EnrolmentId" />
+                                    <input name="finishTime" class="form-control form-control-sm" placeholder="hh:mm:ss" style="width:110px" required />
+                                    <input name="finishPosition" type="number" min="1" class="form-control form-control-sm" placeholder="Pos" style="width:80px" required />
+                                    <button class="btn btn-rd btn-sm" type="submit">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

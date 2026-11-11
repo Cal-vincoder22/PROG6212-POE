@@ -1,0 +1,50 @@
+﻿@model RaceDay.Web.Models.EventDetailModel
+@{ ViewData["Title"] = "Categories"; }
+
+<a asp-action="Index" class="text-decoration-none">&larr; My events</a>
+<h2 class="mt-2 mb-3">Categories: @Model.Name</h2>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="rd-panel">
+            @if (!Model.Categories.Any())
+            {
+                <p class="text-muted mb-0">No categories yet. Add the first one.</p>
+            }
+            else
+            {
+                <table class="table rd-table align-middle mb-0">
+                    <thead><tr><th>Category</th><th>Ages</th><th>Distance</th></tr></thead>
+                    <tbody>
+                    @foreach (var c in Model.Categories)
+                    {
+                        <tr>
+                            <td>@c.CategoryName</td>
+                            <td>@(c.MinAge?.ToString() ?? "Any") to @(c.MaxAge?.ToString() ?? "Any")</td>
+                            <td>@(c.DistanceKm.HasValue ? c.DistanceKm.Value.ToString("0.#") + " km" : "-")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="rd-panel">
+            <h5>Add a category</h5>
+            <form asp-action="AddCategory" asp-route-id="@Model.EventId" method="post">
+                <div class="mb-2"><label class="form-label">Name</label>
+                    <input name="CategoryName" class="form-control" required maxlength="100" /></div>
+                <div class="row">
+                    <div class="col-6 mb-2"><label class="form-label">Min age</label>
+                        <input name="MinAge" type="number" min="0" max="120" class="form-control" /></div>
+                    <div class="col-6 mb-2"><label class="form-label">Max age</label>
+                        <input name="MaxAge" type="number" min="0" max="120" class="form-control" /></div>
+                </div>
+                <div class="mb-3"><label class="form-label">Distance (km)</label>
+                    <input name="DistanceKm" type="number" step="0.1" min="0" class="form-control" /></div>
+                <button class="btn btn-rd" type="submit">Add category</button>
+            </form>
+        </div>
+    </div>
+</div>
