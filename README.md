@@ -1,4 +1,4 @@
-# RaceDay Part 1 & 2
+# RaceDay POE FINAL
 
 PROG6212 Programming 2B - Portfolio of Evidence - Part 1: System Planning and Database
 
@@ -138,3 +138,77 @@ ASP.NET Core 8 Web API using Entity Framework Core (Code-First) with SQL Server,
 ## Video walkthrough
 
 [https://youtu.be/ROM6_qx7lW0]
+
+---
+# Part 3: RaceDay Web (ASP.NET Core MVC front end)
+
+Part 3 adds an ASP.NET Core 8 MVC web app (`RaceDay.Web`) on top of the Part 2 API, with image uploads to Azure Blob Storage and a Docker container for the web app.
+
+## Architecture
+
+- **RaceDay.Web (MVC)** talks to the API only. It has no database access and no Azure access of its own.
+- **RaceDay.Api** owns the database (EF Core / SQL Server LocalDB) and the Azure Blob Storage uploads.
+- Login: the MVC app calls the API login endpoint, keeps the API session cookie in its own server-side session, and forwards it on every API call. The MVC session cookie is named `.RaceDay.Web.Session` so it does not clash with the API's cookie on localhost.
+- Role control: a `RequireRole` filter sends logged-out users to the login page and sends users with the wrong role to the home page.
+
+## Features
+
+**Everyone:** browse and filter events (type, upcoming only), view event details with banner and categories, register and log in.
+
+**Participant:** enter an event category, "My events" with colour-coded status (Confirmed / Pending / Cancelled), "My results" with finish time and position (for example "3rd out of 12 finishers"), profile page with name edit and profile picture upload.
+
+**Organiser:** dashboard of own events with entry counts, create / edit / delete events, banner image upload, add categories, view entries for each event, capture finish time and position per entry.
+
+**Friendly errors:** failed API calls show a plain-language message, never a stack trace or raw error.
+
+## Azure Blob Storage
+
+- Storage account with two containers: `event-images` (event banners) and `profile-pictures`.
+- Uploads go from the MVC form to the API (`POST api/events/{id}/banner`, `POST api/users/me/picture`). The API validates the file (JPEG, PNG or WebP, max 5 MB) and saves it to Blob Storage with a GUID file name. The returned URL is stored on the event or user.
+- The connection string is stored in **user secrets** (`AzureStorage:ConnectionString`) and is never committed.
+
+## How to run locally
+
+1. Install the .NET 8 SDK and Visual Studio 2022 or later.
+2. Add the Azure connection string to the API's user secrets:
+   `dotnet user-secrets set "AzureStorage:ConnectionString" "<your connection string>" --project RaceDay/RaceDay.Api`
+3. Open the solution, choose **Configure Startup Projects → Multiple startup projects**, and set **RaceDay.Api** and **RaceDay.Web** to Start.
+4. Press F5. The API runs at `https://localhost:7003` and the web app at `https://localhost:7192`.
+5. Register a Participant and an Organiser account on the Sign up page.
+
+## Docker (RaceDay.Web)
+
+The API must be running on your machine first (F5 in Visual Studio, http port 5075).
+
+```bash
+cd RaceDay/RaceDay.Web
+docker build -t raceday-web .
+docker run -p 8080:8080 -e Api__BaseUrl=http://host.docker.internal:5075/ raceday-web
+```
+
+Then open http://localhost:8080. The API address is passed in as an environment variable, so no secrets or URLs are baked into the image.
+
+![Web app running in Docker](<img width="1335" height="962" alt="localhost8080" src="https://github.com/user-attachments/assets/9a8fb8ef-a6d5-4ee9-b563-baa23353d2e0" />
+)
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/part2-build-test.yml`) builds the API, runs the 45 unit tests, builds `RaceDay.Web`, and builds the Docker image on every push.
+
+![Successful GitHub Actions run](<img width="512" height="315" alt="workflow" src="https://github.com/user-attachments/assets/fd499285-a549-4377-8039-f8e44512ef90" />
+)
+
+## Changes to the Part 2 API made for Part 3
+
+- `GET api/events/mine` (organiser's own events with entry counts)
+- `POST api/events/{id}/banner` and `POST api/users/me/picture` (Azure uploads)
+- Enrolment and result responses now include status, event date and total finishers
+- HTTPS redirection is skipped in Development so the Docker container can call the API over http
+
+## Video demonstration
+
+[Watch the Part 3 demo on YouTube (unlisted)](https://youtu.be/IMgXxVyeY7M)
+
+## AI use disclosure
+
+I used Claude (Anthropic's AI assistant) as a guide while building Part 3. It helped me plan the work against the rubric, explained Azure, Docker and GitHub Actions setup, and suggested starting code for the MVC controllers, views, the Azure upload service, the Dockerfile and the CI workflow. I typed the code into my own project, ran and tested it, fixed the problems that came up (for example a view in the wrong folder, Docker not reaching the API, and the HTTPS redirect), and I understand how each part works. The video voice-over is my own.
